@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 void main() {
   runApp(MaterialApp(
     home: Home(),
+    debugShowCheckedModeBanner: false,
   ));
 }
 
@@ -22,6 +23,10 @@ class _HomeState extends State<Home> {
   List _toDoList = [];
 
   final _toDoController = TextEditingController();
+
+  Map<String, dynamic> _lastRemoved;
+
+  int _lastRemovedPos;
 
 
   @override
@@ -47,13 +52,28 @@ class _HomeState extends State<Home> {
     });
   }
 
+  Future<Null> _refresh() async{
+    await Future.delayed(Duration(seconds: 1));
+    setState(() {
+      _toDoList.sort((a,b){
+        if(a["ok"] && !b["ok"]){
+          return 1;
+        }else if (!a["ok"] && b["ok"]){
+          return -1;
+        }else{
+          return 0;
+        }
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text("Lista de Tarefas"),
         centerTitle: true,
-        backgroundColor: Colors.redAccent,
+        backgroundColor: Colors.blue[300],
       ),
       body: Column(
         children: <Widget>[
@@ -66,12 +86,12 @@ class _HomeState extends State<Home> {
                       controller: _toDoController,
                       decoration: InputDecoration(
                         labelText: "Nova Tarefa",
-                        labelStyle: TextStyle(color: Colors.redAccent)
+                        labelStyle: TextStyle(color: Colors.blue[300])
                       ),
                     )
                 ),
                 RaisedButton(
-                    color: Colors.redAccent,
+                    color: Colors.blue[300],
                     child: Icon(Icons.add, color: Colors.white,),
                     onPressed: _addToDo
                 )
@@ -79,10 +99,13 @@ class _HomeState extends State<Home> {
             ),
           ),
           Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.only(top: 10.0),
-                itemCount: _toDoList.length,
-                itemBuilder: builderItem,
+              child: RefreshIndicator(
+                  child: ListView.builder(
+                    padding: EdgeInsets.only(top: 10.0),
+                    itemCount: _toDoList.length,
+                    itemBuilder: builderItem,
+                  ),
+                  onRefresh: _refresh
               )
           )
         ],
@@ -114,6 +137,31 @@ class _HomeState extends State<Home> {
           });
         },
       ),
+      onDismissed: (direction){
+        setState(() {
+          _lastRemoved = Map.from(_toDoList[index]);
+          _lastRemovedPos = index;
+          _toDoList.removeAt(index);
+
+          _writeFile();
+
+          final snack = SnackBar(
+              content: Text("Tarefa ${_lastRemoved['title']} foi removida"),
+              action: SnackBarAction(
+                  label: "Desfazer",
+                  onPressed: (){
+                    setState(() {
+                      _toDoList.insert(_lastRemovedPos, _lastRemoved);
+                      _writeFile();
+                    });
+                  }
+              ),
+            duration: Duration(seconds: 2),
+          );
+          Scaffold.of(context).removeCurrentSnackBar();
+          Scaffold.of(context).showSnackBar(snack);
+        });
+      },
     );
   }
 

@@ -1,0 +1,4 @@
+br.com.diogenes.todo_flutter
+drawable launch_background
+mipmap ic_launcher
+style LaunchTheme
