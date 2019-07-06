@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
-
+import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 //passando na main o nosso app que possui como home um statefulWidget
 void main() {
@@ -30,9 +31,13 @@ class _HomeState extends State<Home> {
 
   int _lastRemovedPos;
 
+  String _deadline;
+
   @override
   void initState() {
     super.initState();
+
+    initializeDateFormatting();
 
     _readFile().then((data) {
       setState(() {
@@ -47,6 +52,7 @@ class _HomeState extends State<Home> {
       newToDo["title"] = _toDoController.text;
       _toDoController.text = "";
       newToDo["ok"] = false;
+      newToDo["deadline"] = _deadline;
       _toDoList.add(newToDo);
       _writeFile();
       Navigator.of(context).pop();
@@ -79,7 +85,7 @@ class _HomeState extends State<Home> {
     });
   }
 
-  Future<void> _neverSatisfied() async {
+  Future<void> _inputTask() async {
     return showDialog<void>(
       context: context,
       builder: (BuildContext context) {
@@ -106,7 +112,7 @@ class _HomeState extends State<Home> {
             RaisedButton(
                 color: Colors.blue[300],
                 child: Icon(Icons.calendar_today, color: Colors.white,),
-                onPressed: _addToDo
+                onPressed: _selectDeadLine
             ),
             RaisedButton(
                 color: Colors.blue[300],
@@ -118,6 +124,18 @@ class _HomeState extends State<Home> {
         );
       },
     );
+  }
+
+  Future _selectDeadLine() async {
+    DateTime picked = await showDatePicker(
+      context: context,
+      initialDate: new DateTime.now(),
+      firstDate: new DateTime(2019),
+      lastDate: new DateTime(2025));
+    if (picked != null) setState(() {
+      final f = new DateFormat.yMMMd('pt_BR');
+      _deadline = f.format(picked);
+    });
   }
 
   @override
@@ -144,7 +162,7 @@ class _HomeState extends State<Home> {
             FloatingActionButton(
                 child: Icon(Icons.add),
                 onPressed: (){
-                  _neverSatisfied();
+                  _inputTask();
                 }
             ),
     );
@@ -166,6 +184,7 @@ class _HomeState extends State<Home> {
       direction: DismissDirection.startToEnd,
       child: CheckboxListTile(
         title: _taskDone(index, check: _toDoList[index]["ok"]),
+        subtitle: Text(_toDoList[index]["deadline"]),
         value: _toDoList[index]["ok"],
         secondary: CircleAvatar(
           child: Icon(_toDoList[index]["ok"] ? Icons.check : Icons.error),
@@ -209,7 +228,7 @@ class _HomeState extends State<Home> {
 
   Future<File> _getFile() async {
     final directory = await getApplicationDocumentsDirectory();
-    return File("${directory.path}/data.json");
+    return File("${directory.path}/tasks.json");
   }
 
   // método para escrever no arquivo json as novas tarefas
