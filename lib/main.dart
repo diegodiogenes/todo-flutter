@@ -10,7 +10,7 @@ void main() {
   runApp(MaterialApp(
     home: Home(),
     theme: ThemeData(
-        hintColor: Colors.blue[300],
+      hintColor: Colors.blue[300],
     ),
     debugShowCheckedModeBanner: false,
   ));
@@ -26,6 +26,8 @@ class _HomeState extends State<Home> {
   List _toDoList = [];
 
   final _toDoController = TextEditingController();
+
+  GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   Map<String, dynamic> _lastRemoved;
 
@@ -48,14 +50,16 @@ class _HomeState extends State<Home> {
 
   void _addToDo() {
     setState(() {
-      Map<String, dynamic> newToDo = Map();
-      newToDo["title"] = _toDoController.text;
-      _toDoController.text = "";
-      newToDo["ok"] = false;
-      newToDo["deadline"] = _deadline;
-      _toDoList.add(newToDo);
-      _writeFile();
-      Navigator.of(context).pop();
+      if(_formKey.currentState.validate()){
+        Map<String, dynamic> newToDo = Map();
+        newToDo["title"] = _toDoController.text;
+        _toDoController.text = "";
+        newToDo["ok"] = false;
+        newToDo["deadline"] = _deadline;
+        _toDoList.add(newToDo);
+        _writeFile();
+        Navigator.of(context).pop();
+      }
     });
   }
 
@@ -92,34 +96,40 @@ class _HomeState extends State<Home> {
         return AlertDialog(
           title: Text('Adicionar Nova Tarefa'),
           content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                Padding(
-                  padding: EdgeInsets.only(top: 5.0),
-                  child: TextField(
-                    decoration: InputDecoration(
-                        labelText: "Inserir Nova Tarefa",
-                        labelStyle: TextStyle(color: Colors.blue[300]),
-                        border: OutlineInputBorder()
-                    ),
-                    controller: _toDoController,
-                  ),
-                )
-              ],
-            ),
+            child: Form(
+                key: _formKey,
+                child: ListBody(
+                  children: <Widget>[
+                    Padding(
+                      padding: EdgeInsets.only(top: 5.0),
+                      child: TextFormField(
+                        decoration: InputDecoration(
+                            labelText: "Inserir Nova Tarefa",
+                            labelStyle: TextStyle(color: Colors.blue[300]),
+                            border: OutlineInputBorder()),
+                        controller: _toDoController,
+                        validator: (value) {
+                          if (value.isEmpty) {
+                            return "Insira o nome de uma tarefa";
+                          }
+                        },
+                      ))
+                  ],
+                )),
           ),
           actions: <Widget>[
             RaisedButton(
                 color: Colors.blue[300],
-                child: Icon(Icons.calendar_today, color: Colors.white,),
-                onPressed: _selectDeadLine
-            ),
+                child: Icon(
+                  Icons.calendar_today,
+                  color: Colors.white,
+                ),
+                onPressed: _selectDeadLine),
             RaisedButton(
                 color: Colors.blue[300],
                 child: Text("ADD"),
                 textColor: Colors.white,
-                onPressed: _addToDo
-            )
+                onPressed: _addToDo)
           ],
         );
       },
@@ -128,43 +138,42 @@ class _HomeState extends State<Home> {
 
   Future _selectDeadLine() async {
     DateTime picked = await showDatePicker(
-      context: context,
-      initialDate: new DateTime.now(),
-      firstDate: new DateTime(2019),
-      lastDate: new DateTime(2025));
-    if (picked != null) setState(() {
-      final f = new DateFormat.yMMMd('pt_BR');
-      _deadline = f.format(picked);
-    });
+        context: context,
+        initialDate: new DateTime.now(),
+        firstDate: new DateTime(2019),
+        lastDate: new DateTime(2025));
+    if (picked != null)
+      setState(() {
+        final f = new DateFormat.yMMMd('pt_BR');
+        _deadline = f.format(picked);
+      });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: Text("Lista de Tarefas"),
-          centerTitle: true,
-          backgroundColor: Colors.blue[300],
-        ),
-        body: Column(
-          children: <Widget>[
-            Expanded(
-                child: RefreshIndicator(
-                    child: ListView.builder(
-                      padding: EdgeInsets.only(top: 10.0),
-                      itemCount: _toDoList.length,
-                      itemBuilder: builderItem,
-                    ),
-                    onRefresh: _refresh)),
-          ],
-        ),
-        floatingActionButton:
-            FloatingActionButton(
-                child: Icon(Icons.add),
-                onPressed: (){
-                  _inputTask();
-                }
-            ),
+      appBar: AppBar(
+        title: Text("Lista de Tarefas"),
+        centerTitle: true,
+        backgroundColor: Colors.blue[300],
+      ),
+      body: Column(
+        children: <Widget>[
+          Expanded(
+              child: RefreshIndicator(
+                  child: ListView.builder(
+                    padding: EdgeInsets.only(top: 10.0),
+                    itemCount: _toDoList.length,
+                    itemBuilder: builderItem,
+                  ),
+                  onRefresh: _refresh)),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+          child: Icon(Icons.add),
+          onPressed: () {
+            _inputTask();
+          }),
     );
   }
 
@@ -228,7 +237,7 @@ class _HomeState extends State<Home> {
 
   Future<File> _getFile() async {
     final directory = await getApplicationDocumentsDirectory();
-    return File("${directory.path}/tasks.json");
+    return File("${directory.path}/tasks2.json");
   }
 
   // método para escrever no arquivo json as novas tarefas
