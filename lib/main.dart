@@ -33,7 +33,7 @@ class _HomeState extends State<Home> {
 
   int _lastRemovedPos;
 
-  String _deadline;
+  String _deadline = "";
 
   @override
   void initState() {
@@ -55,7 +55,7 @@ class _HomeState extends State<Home> {
         newToDo["title"] = _toDoController.text;
         _toDoController.text = "";
         newToDo["ok"] = false;
-        newToDo["deadline"] = _deadline;
+        newToDo["deadline"] = _deadline.isEmpty ? new DateFormat.yMMMd('pt_BR').format(new DateTime.now()) : _deadline;
         _toDoList.add(newToDo);
         _writeFile();
         Navigator.of(context).pop();
