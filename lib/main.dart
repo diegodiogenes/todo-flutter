@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 //passando na main o nosso app que possui como home um statefulWidget
 void main() {
@@ -35,20 +36,24 @@ class _HomeState extends State<Home> {
 
   String _deadline = "";
 
-  @override
-  void initState() {
-    super.initState();
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 
-    initializeDateFormatting();
-
-    _readFile().then((data) {
-      setState(() {
-        _toDoList = json.decode(data);
-      });
-    });
+  Future onSelectNotification(String payload) async{
+    showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text("ALERT"),
+          content: Text("CONTENT: $payload"),
+        ));
   }
 
-  void _addToDo() {
+  Future<void> _addToDo() async{
+    var android = AndroidNotificationDetails(
+        'channel id', 'channel name', 'channel description');
+    var iOS = IOSNotificationDetails();
+    var platform = NotificationDetails(android, iOS);
+    var scheduledNotificationDateTime = new DateTime.now().add(Duration(seconds: 10));
+    await flutterLocalNotificationsPlugin.schedule(0, 'Você tem uma tarefa se aproximando ', _toDoController.text, scheduledNotificationDateTime, platform);
     setState(() {
       if(_formKey.currentState.validate()){
         Map<String, dynamic> newToDo = Map();
@@ -62,6 +67,36 @@ class _HomeState extends State<Home> {
       }
     });
   }
+
+  @override
+  void initState() {
+    super.initState();
+
+    initializeDateFormatting();
+
+    Future onSelectNotification(String payload) async{
+      showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: Text("ALERT"),
+            content: Text("CONTENT: $payload"),
+          ));
+    }
+
+    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    var android = AndroidInitializationSettings('icon');
+    var iOS = IOSInitializationSettings();
+    var initSettings = InitializationSettings(android, iOS);
+    flutterLocalNotificationsPlugin.initialize(initSettings,
+        onSelectNotification: onSelectNotification);
+
+    _readFile().then((data) {
+      setState(() {
+        _toDoList = json.decode(data);
+      });
+    });
+  }
+
 
   Text _taskDone(index, {bool check}) {
     if (check) {
